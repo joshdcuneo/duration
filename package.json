@@ -39,7 +39,7 @@
     "singleQuote": true,
     "trailingComma": "es5"
   },
-  "name": "duration",
+  "name": "@joshdcuneo/duration",
   "author": "Josh",
   "module": "dist/duration.esm.js",
   "size-limit": [
