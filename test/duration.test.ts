@@ -3,6 +3,11 @@ import { Duration } from '../src';
 const N = 2;
 describe('instantiation', () => {
   test('Duration.hours', () => {
+    const duration = Duration.days(N);
+    expect(duration).toEqual(Duration.from('d', N));
+    expect(duration.valueOf()).toBe(N * 24 * 60 * 60 * 1000);
+  });
+  test('Duration.hours', () => {
     const duration = Duration.hours(N);
     expect(duration).toEqual(Duration.from('h', N));
     expect(duration.valueOf()).toBe(N * 60 * 60 * 1000);
@@ -25,6 +30,11 @@ describe('instantiation', () => {
 });
 
 describe('access', () => {
+  test('duration.days', () => {
+    const duration = Duration.days(N);
+    expect(duration.in('d')).toBe(N);
+    expect(duration.days()).toBe(N);
+  });
   test('duration.hours', () => {
     const duration = Duration.hours(N);
     expect(duration.in('h')).toBe(N);
@@ -49,11 +59,12 @@ describe('access', () => {
 
 describe('formatString', () => {
   test('single units', () => {
-    const duration = Duration.hours(2);
-    expect(duration.format('h')).toBe('2');
-    expect(duration.format('m')).toBe('120');
-    expect(duration.format('s')).toBe('7200');
-    expect(duration.format('i')).toBe('7200000');
+    const duration = Duration.days(2);
+    expect(duration.format('d')).toBe(String(2));
+    expect(duration.format('h')).toBe(String(2 * 24));
+    expect(duration.format('m')).toBe(String(2 * 24 * 60));
+    expect(duration.format('s')).toBe(String(2 * 24 * 60 * 60));
+    expect(duration.format('i')).toBe(String(2 * 24 * 60 * 60 * 1000));
   });
   test('mixed units', () => {
     const duration = Duration.hours(2.5373);

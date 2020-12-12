@@ -1,4 +1,4 @@
-export type Unit = 'h' | 'm' | 's' | 'i';
+export type Unit = 'd' | 'h' | 'm' | 's' | 'i';
 
 export interface FormatOptions {
   padStart?: {
@@ -11,7 +11,8 @@ export interface FormatOptions {
 const I = 1,
   S = I * 1000,
   M = S * 60,
-  H = M * 60;
+  H = M * 60,
+  D = H * 24;
 
 export class Duration {
   private value: number;
@@ -27,6 +28,8 @@ export class Duration {
       throw new TypeError('Duration must be a valid number');
     }
     switch (unit) {
+      case 'd':
+        return new Duration(value * D);
       case 'h':
         return new Duration(value * H);
       case 'm':
@@ -36,6 +39,10 @@ export class Duration {
       case 'i':
         return new Duration(value);
     }
+  }
+
+  static days(value: number) {
+    return Duration.from('d', value);
   }
 
   static hours(value: number) {
@@ -60,6 +67,8 @@ export class Duration {
 
   in(unit: Unit) {
     switch (unit) {
+      case 'd':
+        return Math.floor(this.value / D);
       case 'h':
         return Math.floor(this.value / H);
       case 'm':
@@ -69,6 +78,10 @@ export class Duration {
       case 'i':
         return Math.floor(this.value);
     }
+  }
+
+  days() {
+    return this.in('d');
   }
 
   hours() {
@@ -91,8 +104,15 @@ export class Duration {
     let formattedString = formatString;
     let remainingDuration = this.value;
 
+    if (formatString.includes('d')) {
+      const days = Math.floor(remainingDuration / D);
+      remainingDuration = remainingDuration - days * D;
+      const str = Duration.applyFormatOptions(days, options);
+      formattedString = formattedString.replace(/d/, str);
+    }
+
     if (formatString.includes('h')) {
-      let hours = Math.floor(remainingDuration / H);
+      const hours = Math.floor(remainingDuration / H);
       remainingDuration = remainingDuration - hours * H;
       const str = Duration.applyFormatOptions(hours, options);
       formattedString = formattedString.replace(/h/, str);
