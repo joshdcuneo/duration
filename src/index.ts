@@ -1,9 +1,12 @@
-export type Unit = 'd' | 'h' | 'm' | 's' | 'i';
+const units = <const> ['d' , 'h' , 'm' , 's', 'i']
+const remUnits = <const> ['D', 'H', 'M', 'S', 'I']
+export type Unit = typeof units[number];
+export type RemUnit = typeof remUnits[number]
 
 export interface FormatOptions {
   padStart?: {
     char: string;
-    count: number;
+    length: number;
   };
   leadingZero?: boolean;
 }
@@ -13,6 +16,8 @@ const I = 1,
   M = S * 60,
   H = M * 60,
   D = H * 24;
+
+const U: {[K in RemUnit]: number} = {I, S, M, H, D}
 
 export class Duration {
   private value: number;
@@ -100,43 +105,60 @@ export class Duration {
     return this.in('i');
   }
 
+  units(value: number, unit: Unit): string {
+    switch(unit) {
+      case "d":
+        return value === 1 ? 'day' : 'days'
+      case "h":
+        return value === 1 ? 'hour' : 'hours'
+      case "m":
+        return value === 1 ? 'minute' : 'minutes'
+      case "s":
+        return value === 1 ? 'second' : 'seconds'
+      case "i":
+        return value === 1 ? 'millisecond' : 'milliseconds'
+    }
+  }
+
   format(formatString: string, options: FormatOptions = {}) {
     let formattedString = formatString;
-    let remainingDuration = this.value;
 
-    if (formatString.includes('d')) {
-      const days = Math.floor(remainingDuration / D);
-      remainingDuration = remainingDuration - days * D;
-      const str = Duration.applyFormatOptions(days, options);
-      formattedString = formattedString.replace(/d/, str);
-    }
+    const durationTokens = formatString.match(/{([dhmsi]o?)}/g) ?? []
+    const remainingTokens = formatString.match(/{([DHMSI]o?)}/g) ?? []
+    const remainingValues: {[K in RemUnit]: number} = {D:0, H:0, M:0, S:0, I:0}
 
-    if (formatString.includes('h')) {
-      const hours = Math.floor(remainingDuration / H);
-      remainingDuration = remainingDuration - hours * H;
-      const str = Duration.applyFormatOptions(hours, options);
-      formattedString = formattedString.replace(/h/, str);
-    }
+    remUnits.reduce((remainingDuration, unit) => {
+      if(remainingTokens.some(token => token.includes(unit))) {
+        const value = Math.floor(remainingDuration / U[unit])
+        remainingValues[unit] = value
+        return remainingDuration - value * U[unit]
+      }
+      return remainingDuration
+    }, this.value)
 
-    if (formatString.includes('m')) {
-      const minutes = Math.floor(remainingDuration / M);
-      remainingDuration = remainingDuration - minutes * M;
-      const str = Duration.applyFormatOptions(minutes, options);
-      formattedString = formattedString.replace(/m/, str);
-    }
+    formattedString = remainingTokens.reduce((str, token) => {
+      const tag = token.slice(1, -1)
+      const [unit, withUnits] = tag.split('')
+      const value = remainingValues[unit as RemUnit]
+      const formattedValue = Duration.applyFormatOptions(value, options)
+      if(withUnits) {
+        return str.replace(new RegExp(token, 'g'), `${formattedValue} ${this.units(value, unit.toLowerCase() as Unit)}`)
+      } else {
+        return str.replace(new RegExp(token, 'g'), formattedValue)
+      }
+    }, formattedString)
 
-    if (formatString.includes('s')) {
-      const seconds = Math.floor(remainingDuration / S);
-      remainingDuration = remainingDuration - seconds * S;
-      const str = Duration.applyFormatOptions(seconds, options);
-      formattedString = formattedString.replace(/s/, str);
-    }
-
-    if (formatString.includes('i')) {
-      const milliseconds = Math.floor(remainingDuration / I);
-      const str = Duration.applyFormatOptions(milliseconds, options);
-      formattedString = formattedString.replace(/i/, str);
-    }
+    formattedString = durationTokens.reduce((str, token) => {
+      const tag = token.slice(1, -1)
+      const [unit, withUnits] = tag.split('')
+      const value = this.in(unit as Unit)
+      const formattedValue = Duration.applyFormatOptions(value, options)
+      if(withUnits) {
+        return str.replace(new RegExp(token, 'g'), `${formattedValue} ${this.units(value, unit as Unit)}`)
+      } else {
+        return str.replace(new RegExp(token, 'g'), formattedValue)
+      }
+    }, formattedString)
 
     return formattedString;
   }
@@ -151,7 +173,7 @@ export class Duration {
       return string.padStart(2, '0');
     }
     if (padStart) {
-      return string.padStart(padStart.count, padStart.char);
+      return string.padStart(padStart.length, padStart.char);
     }
     return string;
   }

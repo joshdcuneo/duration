@@ -2,7 +2,7 @@ import { Duration } from '../src';
 
 const N = 2;
 describe('instantiation', () => {
-  test('Duration.hours', () => {
+  test('Duration.days', () => {
     const duration = Duration.days(N);
     expect(duration).toEqual(Duration.from('d', N));
     expect(duration.valueOf()).toBe(N * 24 * 60 * 60 * 1000);
@@ -58,40 +58,74 @@ describe('access', () => {
 });
 
 describe('formatString', () => {
-  test('single units', () => {
+  test('single duration units', () => {
     const duration = Duration.days(2);
-    expect(duration.format('d')).toBe(String(2));
-    expect(duration.format('h')).toBe(String(2 * 24));
-    expect(duration.format('m')).toBe(String(2 * 24 * 60));
-    expect(duration.format('s')).toBe(String(2 * 24 * 60 * 60));
-    expect(duration.format('i')).toBe(String(2 * 24 * 60 * 60 * 1000));
+    expect(duration.format('{d}')).toBe(String(2));
+    expect(duration.format('{h}')).toBe(String(2 * 24));
+    expect(duration.format('{m}')).toBe(String(2 * 24 * 60));
+    expect(duration.format('{s}')).toBe(String(2 * 24 * 60 * 60));
+    expect(duration.format('{i}')).toBe(String(2 * 24 * 60 * 60 * 1000));
   });
-  test('mixed units', () => {
-    const duration = Duration.hours(2.5373);
-    expect(duration.format('h')).toBe('2');
-    expect(duration.format('h m')).toBe('2 32');
-    expect(duration.format('h m s')).toBe('2 32 14');
-    expect(duration.format('h m s i')).toBe('2 32 14 280');
+
+  test('single remaining units', () => {
+    const duration = Duration.days(2);
+    expect(duration.format('{D}')).toBe(String(2));
+    expect(duration.format('{H}')).toBe(String(2 * 24));
+    expect(duration.format('{M}')).toBe(String(2 * 24 * 60));
+    expect(duration.format('{S}')).toBe(String(2 * 24 * 60 * 60));
+    expect(duration.format('{I}')).toBe(String(2 * 24 * 60 * 60 * 1000));
   });
-  test('reversed mixed units', () => {
-    const duration = Duration.hours(2.5373);
-    expect(duration.format('h')).toBe('2');
-    expect(duration.format('m h')).toBe('32 2');
-    expect(duration.format('s m h')).toBe('14 32 2');
-    expect(duration.format('i s m h')).toBe('280 14 32 2');
+
+  test('mixed remaining units', () => {
+    const duration = Duration.days(2.5373);
+    expect(duration.format('{D}')).toBe('2');
+    expect(duration.format('{D} {H}')).toBe('2 12');
+    expect(duration.format('{D} {H} {M}')).toBe('2 12 53');
+    expect(duration.format('{D} {H} {M} {S}')).toBe('2 12 53 42');
+    expect(duration.format('{D} {H} {M} {S} {I}')).toBe('2 12 53 42 720');
   });
+
+  test('reversed remaining units', () => {
+    const duration = Duration.days(2.5373);
+    expect(duration.format('{I} {S} {M} {H} {D}')).toBe('720 42 53 12 2');
+  });
+
   test('wierd mixed units', () => {
     const duration = Duration.hours(2.5373);
-    expect(duration.format('h h')).toBe('2 h');
-    expect(duration.format('m h m')).toBe('32 2 m');
-    expect(duration.format('s s s h')).toBe('1934 s s 2');
+    expect(duration.format('{H} hours')).toBe('2 hours');
+    expect(duration.format('{M} {m}')).toBe('152 152');
+    expect(duration.format('{M} {s} {M} {H}')).toBe('32 9134 32 2');
   });
-  test('with other chars', () => {
-    const duration = Duration.hours(2.5373);
-    expect(duration.format('h:m')).toBe('2:32');
-  });
+
   test('with leading 0', () => {
     const duration = Duration.hours(2.03);
-    expect(duration.format('h:m', { leadingZero: true })).toBe('02:01');
+    expect(duration.format('{H}:{M}', { leadingZero: true })).toBe('02:01');
   });
+
+  test('single remaining units with unit string', () => {
+    const duration = Duration.days(2);
+    expect(duration.format('{Do}')).toBe("2 days");
+    expect(duration.format('{Ho}')).toBe("48 hours");
+    expect(duration.format('{Mo}')).toBe("2880 minutes");
+    expect(duration.format('{So}')).toBe("172800 seconds");
+    expect(duration.format('{Io}')).toBe("172800000 milliseconds");
+  });
+
+  test('timer', () => {
+    const duration = Duration.days(2.34)
+    expect(duration.format("{H}:{M}:{S}", {leadingZero: true})).toBe("56:09:36")
+  })
+
+  test('padStart', () => {
+    const duration = Duration.days(2.34)
+    expect(duration.format("{H}:{M}:{S}", {padStart: {char: "X", length: 3}})).toBe("X56:XX9:X36")
+  })
+
+  test('single unit formatting', () => {
+    expect(Duration.days(1).format("{do}")).toBe("1 day")
+    expect(Duration.hours(1).format("{ho}")).toBe("1 hour")
+    expect(Duration.minutes(1).format("{mo}")).toBe("1 minute")
+    expect(Duration.seconds(1).format("{so}")).toBe("1 second")
+    expect(Duration.milliseconds(1).format("{io}")).toBe("1 millisecond")
+  })
 });
